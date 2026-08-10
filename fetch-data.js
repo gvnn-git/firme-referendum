@@ -57,9 +57,9 @@ async function main() {
     sostenitori: item.sostenitori || 0,
     quorum: item.quorum || 50000,
     dataInizioRaccolta: item.dataInizioRaccolta || null,
-    dataFineRaccolta: item.dataFineRaccolta || null,
-    dataChiusura: item.dataChiusura || null,
-    dataGazzetta: item.dataGazzetta || null,
+    dataFineRaccolta: item.dataFineRaccolta && item.dataFineRaccolta < '9999' ? item.dataFineRaccolta : null,
+    dataChiusura: item.dataChiusura && item.dataChiusura < '9999' ? item.dataChiusura : null,
+    dataGazzetta: item.dataGazzetta && item.dataGazzetta < '9999' ? item.dataGazzetta : null,
     sito: item.sito || '',
     linkOriginale: `https://firmereferendum.giustizia.it/referendum/open/dettaglio-open/${item.id}`,
   }));
