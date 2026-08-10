@@ -47,6 +47,8 @@
     .empty-state { padding: 3rem; text-align: center; color: #6c757d; }
     #results-count { font-size: 0.82rem; color: #6c757d; }
     .sito-link { font-size: 0.75rem; }
+    .badge-scaduta { background: #fff3cd; color: #664d03; border: 1px solid #ffc107;
+                     font-size: 0.68rem; padding: 1px 5px; border-radius: 4px; white-space: nowrap; }
 
     @media (max-width: 767px) {
       .stat-value { font-size: 1.5rem; }
@@ -102,6 +104,7 @@
     <select id="filter-stato" class="form-select form-select-sm filter-select">
       <option value="">Tutti gli stati</option>
       <option value="IN RACCOLTA FIRME">In raccolta firme</option>
+      <option value="SCADUTA_NON_CHIUSA">⚠ Scaduta (non ancora chiusa)</option>
       <option value="CHIUSA">Chiusa</option>
       <option value="MESSA A DISPOSIZIONE">Messa a disposizione</option>
       <option value="MESSA A DISPOSIZIONE CAMERA">Messa a disp. Camera</option>
@@ -168,7 +171,7 @@ function daysFromNow(dateStr) {
   return Math.ceil((d - Date.now()) / 86400000);
 }
 
-function badgeStato(stato, statoId) {
+function badgeStato(stato, statoId, dataFineRaccolta) {
   const map = {
     'IN RACCOLTA FIRME': ['success', 'In raccolta'],
     'CHIUSA': ['secondary', 'Chiusa'],
@@ -176,7 +179,14 @@ function badgeStato(stato, statoId) {
     'MESSA A DISPOSIZIONE CAMERA': ['info', 'Camera'],
   };
   const [cls, label] = map[stato] || ['dark', stato];
-  return `<span class="badge bg-${cls} badge-stato">${label}</span>`;
+  let extra = '';
+  if (statoId === 2 && dataFineRaccolta) {
+    const days = daysFromNow(dataFineRaccolta);
+    if (days !== null && days < 0) {
+      extra = ' <span class="badge-scaduta" title="La scadenza è passata ma lo stato non è ancora aggiornato dalla fonte">Scaduta?</span>';
+    }
+  }
+  return `<span class="badge bg-${cls} badge-stato">${label}</span>${extra}`;
 }
 
 function buildRow(p) {
@@ -226,7 +236,7 @@ function buildRow(p) {
       <div class="pct-text">${pctDisplay}</div>
     </td>
     <td class="scadenza-col">${scadenzaHtml}</td>
-    <td>${badgeStato(p.stato, p.statoId)}</td>
+    <td>${badgeStato(p.stato, p.statoId, p.dataFineRaccolta)}</td>
   </tr>`;
 }
 
@@ -264,10 +274,20 @@ function getFilters() {
   };
 }
 
+function isScadutaNonChiusa(p) {
+  if (p.statoId !== 2 || !p.dataFineRaccolta) return false;
+  const days = daysFromNow(p.dataFineRaccolta);
+  return days !== null && days < 0;
+}
+
 function applyFilters(proposals) {
   const { search, stato, cat, tipo } = getFilters();
   return proposals.filter(p => {
-    if (stato && p.stato !== stato) return false;
+    if (stato === 'SCADUTA_NON_CHIUSA') {
+      if (!isScadutaNonChiusa(p)) return false;
+    } else if (stato) {
+      if (p.stato !== stato) return false;
+    }
     if (cat && p.categoria !== cat) return false;
     if (tipo && String(p.tipoId) !== tipo) return false;
     if (search && !p.titolo.toLowerCase().includes(search) &&
