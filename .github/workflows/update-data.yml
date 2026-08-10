@@ -1,0 +1,36 @@
+name: Aggiorna dati proposte
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # ogni giorno alle 06:00 UTC
+  workflow_dispatch:        # esecuzione manuale dalla UI GitHub
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Scarica dati dall'API
+        run: node fetch-data.js
+
+      - name: Commit e push se ci sono modifiche
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/proposals.json
+          if git diff --staged --quiet; then
+            echo "Nessuna modifica ai dati."
+          else
+            git commit -m "chore: aggiornamento automatico dati $(date -u '+%Y-%m-%d %H:%M UTC')"
+            git push
+          fi
